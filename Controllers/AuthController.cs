@@ -1,68 +1,31 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using AuthentGuard.Models;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
-using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
+using AuthentGuard.Services;
 
-[ApiController]
-[Route("api/[controller]")]
-public class AuthController : ControllerBase
-{
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly SignInManager<ApplicationUser> _signInManager;
-    private readonly IConfiguration _configuration;
-
-    public AuthController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration)
+namespace AuthentGuard.Controllers
+{ 
+    [Route("api/[controller]")]
+    [ApiController]
+    public class AuthController : ControllerBase
     {
-        _userManager = userManager;
-        _signInManager = signInManager;
-        _configuration = configuration;
-    }
+        private readonly AuthService _authService;
 
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginModel model)
-    {
-        var user = await _userManager.FindByNameAsync(model.UserName);
-
-        if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
+        public AuthController(AuthService authService)
         {
-            // Password is correct, generate JWT token
-            var token = GenerateJwtToken(user);
-
-            // Return the token to the client
-            return Ok(new { Token = token });
+            _authService = authService;
         }
 
-        // Invalid username or password
-        return Unauthorized();
-    }
-
-    private string GenerateJwtToken(ApplicationUser user)
-    {
-        var claims = new List<Claim>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [HttpPost("login")]
+        public IActionResult Login([FromBody] LoginModel model)
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id),
-            new Claim(ClaimTypes.Name, user.UserName)
-            // Add other claims as needed
-        };
+            var token = _authService.Authenticate(model.Username, model.Password);
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            if (token == null)
+                return Unauthorized();
 
-        var token = new JwtSecurityToken(
-            _configuration["Jwt:Issuer"],
-            _configuration["Jwt:Issuer"],
-            claims,
-            expires: DateTime.Now.AddMinutes(30),
-            signingCredentials: creds
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
+            return Ok(new { Token = token });
+        }
     }
-
-    // Other authentication-related actions...
 }
