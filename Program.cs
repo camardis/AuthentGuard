@@ -1,6 +1,13 @@
 using AuthentGuard.Database;
 using AuthentGuard.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using MySqlConnector;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using Pomelo.EntityFrameworkCore.MySql.Storage;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,12 +21,28 @@ builder.Services.AddControllers();
 builder.Services.AddSingleton<AuthService>();
 builder.Services.AddSingleton<UserService>();
 
-// Configure your DbContext
-builder.Services.AddDbContext<SimplyDbContext>(options =>
-{
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
-});
+// Add database
+builder.Services.AddDbContextPool<SimplyDbContext>(options => options
+    .UseMySql(builder.Configuration.GetConnectionString("DefaultConnection") + ";CharSet=utf8mb4", new MySqlServerVersion(new Version(8, 0, 28)))
+    .EnableSensitiveDataLogging()
+    .EnableDetailedErrors()
+);
 
+// Check if the MySQL connection is working
+using (var connection = new MySqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")))
+{
+    connection.Open();
+    Console.WriteLine("MySQL ServerVersion: " + connection.ServerVersion);
+}
+
+// Make a check if the database is working with Entity Framework and console log it
+using (var scope = builder.Services.BuildServiceProvider().CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<SimplyDbContext>();
+    // this line will create the database if it does not exist
+    //dbContext.Database.EnsureCreated();
+    Console.WriteLine("Database is working");
+}
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -38,18 +61,14 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
-
 app.UseCors();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

@@ -10,11 +10,7 @@ namespace AuthentGuard.Database
         {
         }
 
+        public DbSet<RegisterModel> RegisterModel { get; set; }
 
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder); // This needs to go before the other rules!
-        }
     }
 }
