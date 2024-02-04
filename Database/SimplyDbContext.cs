@@ -12,5 +12,11 @@ namespace AuthentGuard.Database
 
         public DbSet<RegisterModel> RegisterModel { get; set; }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            // Specify the MySQL-specific configurations here if needed
+            base.OnModelCreating(modelBuilder);
+        }
+
     }
 }

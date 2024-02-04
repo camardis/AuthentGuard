@@ -7,11 +7,11 @@ namespace AuthentGuard.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public Guid Uid { get; set; }
+        public int Id { get; set; }
 
         [Required(ErrorMessage = "Please provide a username.")]
         [StringLength(255, MinimumLength = 3, ErrorMessage = "Username must be between 3 and 255 characters.")]
-        public string Username { get; set; }
+        public string UserName { get; set; }
 
         [Required(ErrorMessage = "Please provide an email.")]
         [EmailAddress(ErrorMessage = "Invalid email format.")]

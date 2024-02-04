@@ -19,7 +19,7 @@ builder.Configuration.AddEnvironmentVariables();
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddSingleton<AuthService>();
-builder.Services.AddSingleton<UserService>();
+builder.Services.AddLogging();
 
 // Add database
 builder.Services.AddDbContextPool<SimplyDbContext>(options => options
@@ -40,7 +40,7 @@ using (var scope = builder.Services.BuildServiceProvider().CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<SimplyDbContext>();
     // this line will create the database if it does not exist
-    //dbContext.Database.EnsureCreated();
+    dbContext.Database.EnsureCreated();
     Console.WriteLine("Database is working");
 }
 
