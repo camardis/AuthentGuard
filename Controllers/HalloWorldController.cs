@@ -10,35 +10,11 @@ namespace AuthentGuard.Controllers
     {
         // GET: api/<HalloWorldController>
 
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [HttpGet]
         public IEnumerable<string> Get()
         {
             return new string[] { "Hallo World", "From AuthentGuardAPI" };
-        }
-
-        // GET api/<HalloWorldController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
-        }
-
-        // POST api/<HalloWorldController>
-        [HttpPost]
-        public void Post([FromBody] string value)
-        {
-        }
-
-        // PUT api/<HalloWorldController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        // DELETE api/<HalloWorldController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
         }
     }
 }
