@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using AuthentGuard.Models;
 using AuthentGuard.Services;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace AuthentGuard.Controllers
 {
@@ -35,6 +36,7 @@ namespace AuthentGuard.Controllers
             if (token == null)
             {
                 _logger.LogWarning($"Failed login attempt for user: {model.Username}");
+                _logger.LogTrace($"Failed login attempt for user: {model.Username}");
                 return Unauthorized();
             }
 

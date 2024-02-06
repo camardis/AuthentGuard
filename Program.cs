@@ -8,6 +8,10 @@ using Pomelo.EntityFrameworkCore.MySql.Storage;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +31,22 @@ builder.Services.AddDbContextPool<SimplyDbContext>(options => options
     .EnableSensitiveDataLogging()
     .EnableDetailedErrors()
 );
+
+// Add JWT authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"], // Update with your issuer
+            ValidAudience = builder.Configuration["Jwt:Audience"], // Update with your audience
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"])) // Update with your secret key
+        };
+    });
 
 // Check if the MySQL connection is working
 using (var connection = new MySqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")))
