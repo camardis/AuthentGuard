@@ -1,0 +1,132 @@
+﻿using AuthentGuard.Database;
+using AuthentGuard.Models;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
+using System;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Security.Claims;
+using System.Text;
+using System.Security.Cryptography;
+
+
+namespace AuthentGuard.Services
+{
+    public class AuthService
+    {
+        private readonly SimplyDbContext _dbContext;
+        private readonly ILogger<AuthService> _logger;
+        private readonly IConfiguration _configuration;
+
+        public AuthService(SimplyDbContext dbContext, ILogger<AuthService> logger, IConfiguration configuration)
+        {
+            _dbContext = dbContext;
+            _logger = logger;
+            _configuration = configuration;
+        }
+
+        public string Authenticate(string username, string password)
+        {
+            // Retrieve JWT configuration values from appsettings
+            var secretKey = _configuration["Jwt:SecretKey"];
+            var issuer = _configuration["Jwt:Issuer"];
+            var audience = _configuration["Jwt:Audience"];
+
+            // Validate the user's credentials
+            if (IsValidUser(username, password))
+            {
+                // Create JWT token
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.ASCII.GetBytes(secretKey);
+                var tokenDescriptor = new SecurityTokenDescriptor
+                {
+                    Subject = new ClaimsIdentity(new Claim[]
+                    {
+                        new Claim(ClaimTypes.Name, username),
+                    }),
+                    Expires = DateTime.UtcNow.AddHours(1),
+                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
+                    Issuer = issuer,
+                    Audience = audience,
+                };
+                var token = tokenHandler.CreateToken(tokenDescriptor);
+
+                // Log successful authentication
+                _logger.LogInformation($"User {username} authenticated successfully.");
+
+                return tokenHandler.WriteToken(token);
+            }
+            else
+            {
+                // Log failed authentication attempt
+                _logger.LogWarning($"Authentication failed for user {username}.");
+                return null;
+            }
+        }
+
+        public RegistrationResult Register(RegisterModel model)
+        {
+            // Check if the email or username is already registered
+            if (IsUserUnique(model.Email, model.UserName))
+            {
+                // Hash the password before storing it
+                string hashedPassword = HashPassword(model.Password);
+
+                // Store the new user in the database
+                RegisterModel newUser = new RegisterModel
+                {
+                    UserName = model.UserName,
+                    Email = model.Email,
+                    Password = hashedPassword,
+                    CreationDateUnixTimestamp = DateTimeOffset.Now.ToUnixTimeSeconds()
+                };
+                _dbContext.RegisterModel.Add(newUser);
+                _dbContext.SaveChanges();
+
+                // Log successful registration
+                _logger.LogInformation($"User {model.UserName} registered successfully.");
+
+                return new RegistrationResult { Success = true };
+            }
+            else
+            {
+                // Log registration failure due to existing email or username
+                _logger.LogWarning($"Registration failed. User with email '{model.Email}' or username '{model.UserName}' already exists.");
+                return new RegistrationResult { Success = false, Message = "User already exists" };
+            }
+        }
+
+        private bool IsValidUser(string username, string password)
+        {
+            // Retrieve the user from the database
+            var user = _dbContext.RegisterModel.FirstOrDefault(u => u.UserName == username);
+
+            // Check if the user exists and the password matches
+            if (user != null)
+            {
+                // Verify the password hash
+                string hashedPassword = HashPassword(password);
+                return user.Password == hashedPassword;
+            }
+            return false;
+        }
+
+        private string HashPassword(string password)
+        {
+            // Implement a secure password hashing algorithm (e.g., bcrypt)
+            // For demonstration, we're using a simple SHA256 hash
+            using (var sha256 = SHA256.Create())
+            {
+                byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+                return Convert.ToBase64String(hashBytes);
+            }
+        }
+
+        private bool IsUserUnique(string email, string userName)
+        {
+            // Check if the email or username is already registered
+            return !_dbContext.RegisterModel.Any(u => u.Email == email || u.UserName == userName);
+        }
+    }
+}
