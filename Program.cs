@@ -48,6 +48,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+// Check what envrionment we are in
+Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
+
 // Check if the MySQL connection is working
 using (var connection = new MySqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")))
 {
@@ -74,7 +77,8 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(builder =>
     {
         builder.AllowAnyOrigin();
-        builder.WithHeaders("X-API-Version");
+        builder.AllowAnyHeader();
+        builder.AllowAnyMethod();
     });
 });
 
