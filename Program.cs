@@ -1,17 +1,13 @@
 using AuthentGuard.Database;
 using AuthentGuard.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using MySqlConnector;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
-using Pomelo.EntityFrameworkCore.MySql.Storage;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using MySqlConnector;
+using System;
 using System.Text;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,10 +18,10 @@ builder.Configuration.AddEnvironmentVariables();
 
 // Add services to the container.
 builder.Services.AddControllers();
-builder.Services.AddSingleton<AuthService>();
 builder.Services.AddLogging();
+builder.Services.AddSingleton<AuthService>();
 
-// Add database
+// Add database context
 builder.Services.AddDbContextPool<SimplyDbContext>(options => options
     .UseMySql(builder.Configuration.GetConnectionString("DefaultConnection") + ";CharSet=utf8mb4", new MySqlServerVersion(new Version(8, 0, 28)))
     .EnableSensitiveDataLogging()
@@ -48,29 +44,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Check what envrionment we are in
-Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
-
-// Check if the MySQL connection is working
-using (var connection = new MySqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")))
-{
-    connection.Open();
-    Console.WriteLine("MySQL ServerVersion: " + connection.ServerVersion);
-}
-
-// Make a check if the database is working with Entity Framework and console log it
-using (var scope = builder.Services.BuildServiceProvider().CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<SimplyDbContext>();
-    // this line will create the database if it does not exist
-    dbContext.Database.EnsureCreated();
-    Console.WriteLine("Database is working");
-}
-
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
 // Add CORS
 builder.Services.AddCors(options =>
 {
@@ -82,17 +55,25 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Add Swagger/OpenAPI
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Your API", Version = "v1" });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Your API v1"));
 }
 
 app.UseHttpsRedirection();
 app.UseCors();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();

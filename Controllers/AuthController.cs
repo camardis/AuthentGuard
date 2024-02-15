@@ -31,12 +31,12 @@ namespace AuthentGuard.Controllers
                 return BadRequest(ModelState);
             }
 
-            var token = _authService.Authenticate(model.Username, model.Password);
+            var token = _authService.Authenticate(model.Email, model.Password);
 
             if (token == null)
             {
-                _logger.LogWarning($"Failed login attempt for user: {model.Username}");
-                _logger.LogTrace($"Failed login attempt for user: {model.Username}");
+                _logger.LogWarning($"Failed login attempt for user: {model.Email}");
+                _logger.LogTrace($"Failed login attempt for user: {model.Email}");
                 return Unauthorized();
             }
 

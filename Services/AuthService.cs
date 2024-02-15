@@ -26,7 +26,7 @@ namespace AuthentGuard.Services
             _configuration = configuration;
         }
 
-        public string Authenticate(string username, string password)
+        public string Authenticate(string email, string password)
         {
             // Retrieve JWT configuration values from appsettings
             var secretKey = _configuration["Jwt:SecretKey"];
@@ -34,7 +34,7 @@ namespace AuthentGuard.Services
             var audience = _configuration["Jwt:Audience"];
 
             // Validate the user's credentials
-            if (IsValidUser(username, password))
+            if (IsValidUser(email, password))
             {
                 // Create JWT token
                 var tokenHandler = new JwtSecurityTokenHandler();
@@ -43,7 +43,7 @@ namespace AuthentGuard.Services
                 {
                     Subject = new ClaimsIdentity(new Claim[]
                     {
-                        new Claim(ClaimTypes.Name, username),
+                        new Claim(ClaimTypes.Name, email),
                     }),
                     Expires = DateTime.UtcNow.AddHours(1),
                     SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
@@ -53,14 +53,14 @@ namespace AuthentGuard.Services
                 var token = tokenHandler.CreateToken(tokenDescriptor);
 
                 // Log successful authentication
-                _logger.LogInformation($"User {username} authenticated successfully.");
+                _logger.LogInformation($"User {email} authenticated successfully.");
 
                 return tokenHandler.WriteToken(token);
             }
             else
             {
                 // Log failed authentication attempt
-                _logger.LogWarning($"Authentication failed for user {username}.");
+                _logger.LogWarning($"Authentication failed for user {email}.");
                 return null;
             }
         }
@@ -68,7 +68,7 @@ namespace AuthentGuard.Services
         public RegistrationResult Register(RegisterModel model)
         {
             // Check if the email or username is already registered
-            if (IsUserUnique(model.Email, model.UserName))
+            if (IsUserUnique(model.Email))
             {
                 // Hash the password before storing it
                 string hashedPassword = HashPassword(model.Password);
@@ -76,7 +76,6 @@ namespace AuthentGuard.Services
                 // Store the new user in the database
                 RegisterModel newUser = new RegisterModel
                 {
-                    UserName = model.UserName,
                     Email = model.Email,
                     Password = hashedPassword,
                     CreationDateUnixTimestamp = DateTimeOffset.Now.ToUnixTimeSeconds()
@@ -85,22 +84,22 @@ namespace AuthentGuard.Services
                 _dbContext.SaveChanges();
 
                 // Log successful registration
-                _logger.LogInformation($"User {model.UserName} registered successfully.");
+                _logger.LogInformation($"User {model.Email} registered successfully.");
 
                 return new RegistrationResult { Success = true };
             }
             else
             {
                 // Log registration failure due to existing email or username
-                _logger.LogWarning($"Registration failed. User with email '{model.Email}' or username '{model.UserName}' already exists.");
+                _logger.LogWarning($"Registration failed. User with email '{model.Email}' or username '{model.Email}' already exists.");
                 return new RegistrationResult { Success = false, Message = "User already exists" };
             }
         }
 
-        private bool IsValidUser(string username, string password)
+        private bool IsValidUser(string email, string password)
         {
             // Retrieve the user from the database
-            var user = _dbContext.RegisterModel.FirstOrDefault(u => u.UserName == username);
+            var user = _dbContext.RegisterModel.FirstOrDefault(u => u.Email == email);
 
             // Check if the user exists and the password matches
             if (user != null)
@@ -123,10 +122,10 @@ namespace AuthentGuard.Services
             }
         }
 
-        private bool IsUserUnique(string email, string userName)
+        private bool IsUserUnique(string email)
         {
             // Check if the email or username is already registered
-            return !_dbContext.RegisterModel.Any(u => u.Email == email || u.UserName == userName);
+            return !_dbContext.RegisterModel.Any(u => u.Email == email);
         }
     }
 }
