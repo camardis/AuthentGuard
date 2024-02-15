@@ -37,7 +37,7 @@ namespace AuthentGuard.Controllers
                 return BadRequest(new { Error = result.Message });
             }
 
-            var token = _authService.Authenticate(RegModel.UserName, RegModel.Password);
+            var token = _authService.Authenticate(RegModel.Email, RegModel.Password);
             return Ok(new TokenResponse { Token = token });
 
         }
