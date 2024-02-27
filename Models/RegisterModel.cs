@@ -19,6 +19,11 @@ namespace AuthentGuard.Models
         public string Password { get; set; }
 
         [Required]
+        public bool AgrredToTerms { get; set; }
+
+        [Required]
         public long CreationDateUnixTimestamp { get; set; }
+
+        public long LastLoginUnixTimestamp { get; set; }
     }
 }

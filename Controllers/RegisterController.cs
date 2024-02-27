@@ -26,6 +26,7 @@ namespace AuthentGuard.Controllers
         {
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning($"Invalid registration request");
                 return BadRequest(ModelState);
             }
 
@@ -38,6 +39,7 @@ namespace AuthentGuard.Controllers
             }
 
             var token = _authService.Authenticate(RegModel.Email, RegModel.Password);
+            _logger.LogInformation($"User {RegModel.Email} registered successfully");
             return Ok(new TokenResponse { Token = token });
 
         }

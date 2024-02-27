@@ -42,5 +42,28 @@ namespace AuthentGuard.Controllers
 
             return Ok(new TokenResponse { Token = token });
         }
+
+        [HttpPost("check-auth")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TokenResponse))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public IActionResult Authenticat([FromBody] TokenResponse token)
+        {
+            if(!ModelState.IsValid)
+            {
+                _logger.LogWarning($"Invalid token validation request");
+                return BadRequest(ModelState);
+            }
+            if(_authService.ValdidateToken(token.Token))
+            {
+                _logger.LogInformation($"Token validation successful");
+                return Ok();
+            }
+            else
+            {
+                _logger.LogWarning($"Token validation failed");
+                return Unauthorized();
+            }
+        }
     }
 }
