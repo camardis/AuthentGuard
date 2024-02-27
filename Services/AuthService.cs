@@ -52,7 +52,8 @@ namespace AuthentGuard.Services
                 };
                 var token = tokenHandler.CreateToken(tokenDescriptor);
 
-                // Log successful authentication
+                UpdateLastLogin(email);
+
                 _logger.LogInformation($"User {email} authenticated successfully.");
 
                 return tokenHandler.WriteToken(token);
@@ -78,6 +79,7 @@ namespace AuthentGuard.Services
                 {
                     Email = model.Email,
                     Password = hashedPassword,
+                    AgrredToTerms = model.AgrredToTerms,
                     CreationDateUnixTimestamp = DateTimeOffset.Now.ToUnixTimeSeconds()
                 };
                 _dbContext.RegisterModel.Add(newUser);
@@ -93,6 +95,36 @@ namespace AuthentGuard.Services
                 // Log registration failure due to existing email or username
                 _logger.LogWarning($"Registration failed. User with email '{model.Email}' or username '{model.Email}' already exists.");
                 return new RegistrationResult { Success = false, Message = "User already exists" };
+            }
+        }
+
+        public bool ValdidateToken(string token)
+        {
+            var secretKey = _configuration["Jwt:SecretKey"];
+            var issuer = _configuration["Jwt:Issuer"];
+            var audience = _configuration["Jwt:Audience"];
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(secretKey);
+            var validationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = issuer,
+                ValidAudience = audience,
+                IssuerSigningKey = new SymmetricSecurityKey(key)
+            };
+
+            try
+            {
+                tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -126,6 +158,14 @@ namespace AuthentGuard.Services
         {
             // Check if the email or username is already registered
             return !_dbContext.RegisterModel.Any(u => u.Email == email);
+        }
+
+        public void UpdateLastLogin(string email)
+        {
+            // Update the LastLoginUnixTimestamp of the user
+            var user = _dbContext.RegisterModel.FirstOrDefault(u => u.Email == email);
+            user.LastLoginUnixTimestamp = DateTimeOffset.Now.ToUnixTimeSeconds();
+            _dbContext.SaveChanges();
         }
     }
 }
