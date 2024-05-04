@@ -7,10 +7,15 @@ namespace AuthentGuard.API.Database
 {
     public class SimplyDbContext : DbContext
     {
+        public SimplyDbContext()
+        {
+            
+        }
+
         public SimplyDbContext(DbContextOptions<SimplyDbContext> options) : base(options)
         {
         }
-        public DbSet<Register> RegisterModel { get; set; }
+        public DbSet<Register> Registers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

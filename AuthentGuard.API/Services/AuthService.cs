@@ -77,7 +77,7 @@ namespace AuthentGuard.API.Services
                     AgrredToTerms = newRegister.AgrredToTerms,
                     CreationDateUnixTimestamp = DateTimeOffset.Now.ToUnixTimeSeconds()
                 };
-                _dbContext.RegisterModel.Add(newRegister);
+                _dbContext.Registers.Add(newRegister);
                 _dbContext.SaveChanges();
 
                 // Log successful registration
@@ -126,7 +126,7 @@ namespace AuthentGuard.API.Services
         private bool IsValidUser(string email, string password)
         {
             // Retrieve the user from the database
-            var user = _dbContext.RegisterModel.FirstOrDefault(u => u.Email == email);
+            var user = _dbContext.Registers.FirstOrDefault(u => u.Email == email);
 
             // Check if the user exists and the password matches
             if (user != null)
@@ -152,13 +152,13 @@ namespace AuthentGuard.API.Services
         private bool IsUserUnique(string email)
         {
             // Check if the email or username is already registered
-            return !_dbContext.RegisterModel.Any(u => u.Email == email);
+            return !_dbContext.Registers.Any(u => u.Email == email);
         }
 
         public void UpdateLastLogin(string email)
         {
             // Update the LastLoginUnixTimestamp of the user
-            var user = _dbContext.RegisterModel.FirstOrDefault(u => u.Email == email);
+            var user = _dbContext.Registers.FirstOrDefault(u => u.Email == email);
             user.LastLoginUnixTimestamp = DateTimeOffset.Now.ToUnixTimeSeconds();
             _dbContext.SaveChanges();
         }
